@@ -2,7 +2,8 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import Image from 'next/image'; // <-- Impor komponen Image
+import Image from 'next/image';
+import Link from 'next/link';
 
 // Tipe data untuk komentar
 interface Comment {
@@ -10,6 +11,7 @@ interface Comment {
   content: string;
   created_at: string;
   profiles: {
+    id: string; // ID pengguna untuk link profil
     username: string;
     avatar_url: string | null;
   }
@@ -26,12 +28,10 @@ export default function CommentSection({ animeId }: CommentSectionProps) {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    // Cek status login
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsLoggedIn(!!session);
     });
 
-    // Ambil komentar
     async function fetchComments() {
       try {
         const res = await fetch(`/api/comments?anime_id=${animeId}`);
@@ -97,7 +97,6 @@ export default function CommentSection({ animeId }: CommentSectionProps) {
         {loading ? <p>Loading komentar...</p> : comments.map(comment => (
           <div key={comment.id} className="p-4 bg-gray-800 border border-gray-700 rounded-lg">
             <div className="flex items-center mb-2">
-              {/* --- BAGIAN YANG DIPERBARUI --- */}
               <div className="relative w-8 h-8 rounded-full bg-gray-600 mr-3 overflow-hidden">
                 {comment.profiles.avatar_url ? (
                   <Image 
@@ -109,8 +108,9 @@ export default function CommentSection({ animeId }: CommentSectionProps) {
                   />
                 ) : null}
               </div>
-              {/* ----------------------------- */}
-              <span className="font-bold text-white">{comment.profiles.username}</span>
+              <Link href={`/users/${comment.profiles.id}`} className="font-bold text-white hover:text-indigo-400">
+                {comment.profiles.username}
+              </Link>
               <span className="text-xs text-gray-500 ml-auto">{new Date(comment.created_at).toLocaleString()}</span>
             </div>
             <p className="text-gray-300">{comment.content}</p>

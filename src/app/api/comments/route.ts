@@ -13,7 +13,6 @@ export async function POST(request: NextRequest) {
 
   const token = authHeader.split(' ')[1];
 
-  // Buat Supabase client BARU yang diautentikasi dengan token pengguna
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -26,7 +25,6 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  // Verifikasi pengguna untuk mendapatkan ID-nya
   const { data: { user }, error: userError } = await supabase.auth.getUser();
 
   if (userError || !user) {
@@ -39,11 +37,10 @@ export async function POST(request: NextRequest) {
   const XP_PER_COMMENT = 5;
 
   try {
-    // Sekarang, semua operasi di bawah ini akan dijalankan sebagai pengguna yang login
     const { data, error: insertError } = await supabase
       .from('comments')
       .insert({ anime_id, content, user_id })
-      .select('*, profiles(username, avatar_url)')
+      .select('*, profiles(id, username, avatar_url)') // Meminta ID profil
       .single();
 
     if (insertError) throw insertError;
@@ -62,9 +59,8 @@ export async function POST(request: NextRequest) {
 }
 
 
-// --- GET: Mengambil Komentar (Tidak perlu otentikasi) ---
+// --- GET: Mengambil Komentar ---
 export async function GET(request: NextRequest) {
-    // Untuk GET, kita bisa gunakan client standar karena semua orang bisa membaca
     const { createClient } = require('@supabase/supabase-js');
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
@@ -78,7 +74,7 @@ export async function GET(request: NextRequest) {
     try {
         const { data, error } = await supabase
             .from('comments')
-            .select('*, profiles(username, avatar_url)')
+            .select('*, profiles(id, username, avatar_url)') // Meminta ID profil
             .eq('anime_id', anime_id)
             .order('created_at', { ascending: false });
 

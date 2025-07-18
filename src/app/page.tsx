@@ -5,7 +5,7 @@ import { Anime } from '@/types';
 async function getAnimeList(): Promise<Anime[]> {
   // Pastikan URL sesuai dengan environment (development/production)
   const apiUrl = process.env.NODE_ENV === 'production'
-    ? '' // Ganti dengan URL produksi Anda nanti
+    ? '' 
     : 'http://localhost:3000/api/anime';
 
   try {
