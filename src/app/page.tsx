@@ -3,13 +3,18 @@ import { Anime } from '@/types';
 
 // Fungsi untuk mengambil data anime dari API internal kita
 async function getAnimeList(): Promise<Anime[]> {
-  // Pastikan URL sesuai dengan environment (development/production)
-  const apiUrl = process.env.NODE_ENV === 'production'
-    ? '' 
-    : 'http://localhost:3000/api/anime';
+  // Mengambil URL dasar dari environment variable
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  // Pengecekan jika variabel tidak terdefinisi
+  if (!apiUrl) {
+    console.error("API URL is not defined in environment variables.");
+    return [];
+  }
 
   try {
-    const res = await fetch(apiUrl, { cache: 'no-store' }); // no-store untuk data dinamis
+    // Menggabungkan URL dasar dengan endpoint spesifik
+    const res = await fetch(`${apiUrl}/anime`, { cache: 'no-store' });
 
     if (!res.ok) {
       console.error("Failed to fetch anime list:", await res.text());
