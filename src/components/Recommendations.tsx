@@ -13,7 +13,6 @@ export default function Recommendations({ animeId }: RecommendationsProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Reset state saat ID anime berubah agar tidak menampilkan rekomendasi lama
     setLoading(true);
     setRecommendations([]);
 
@@ -34,7 +33,6 @@ export default function Recommendations({ animeId }: RecommendationsProps) {
     fetchRecommendations();
   }, [animeId]);
 
-  // Jangan tampilkan apa pun jika sedang loading atau tidak ada rekomendasi
   if (loading || recommendations.length === 0) {
     return null;
   }
@@ -50,3 +48,5 @@ export default function Recommendations({ animeId }: RecommendationsProps) {
     </div>
   );
 }
+
+

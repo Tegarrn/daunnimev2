@@ -6,6 +6,7 @@ import { notFound, useParams } from 'next/navigation';
 import VideoPlayer from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabaseClient';
 import CommentSection from '@/components/CommentSection';
+import Recommendations from '@/components/Recommendations'; // <-- PASTIKAN IMPORT INI ADA
 
 interface Episode {
   id: number;
@@ -24,38 +25,54 @@ export default function AnimeDetailPage() {
   const [anime, setAnime] = useState<AnimeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   useEffect(() => {
-    async function fetchAnimeDetail() {
-      const apiUrl = `/api/anime/${id}`;
+    async function fetchAndSetData() {
+      if (!id) return;
+      
+      setLoading(true);
       try {
-        const res = await fetch(apiUrl);
+        const res = await fetch(`/api/anime/${id}`);
         if (!res.ok) {
-          setLoading(false);
           notFound();
           return;
         }
         const { data } = await res.json();
         setAnime(data);
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setIsLoggedIn(true);
+          const bookmarkRes = await fetch(`/api/bookmarks?anime_id=${id}`, {
+            headers: { 'Authorization': `Bearer ${session.access_token}` },
+          });
+          if (bookmarkRes.ok) {
+            const { isBookmarked } = await bookmarkRes.json();
+            setIsBookmarked(isBookmarked);
+          }
+        } else {
+          setIsLoggedIn(false);
+        }
+
       } catch (error) {
         console.error("Error fetching anime detail:", error);
       } finally {
         setLoading(false);
+        setIsBookmarkLoading(false);
       }
     }
-    if (id) {
-        fetchAnimeDetail();
-    }
+    
+    fetchAndSetData();
   }, [id]);
 
   const handleSelectEpisode = async (episode: Episode) => {
     setSelectedEpisode(episode);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.error("Not logged in, cannot update watch history.");
-        return;
-      }
+      if (!session) return;
       await fetch('/api/watch-history', {
         method: 'POST',
         headers: {
@@ -66,6 +83,36 @@ export default function AnimeDetailPage() {
       });
     } catch (error) {
       console.error("Failed to send watch history:", error);
+    }
+  };
+
+  const handleToggleBookmark = async () => {
+    if (!anime) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert('Anda harus login untuk menambahkan bookmark.');
+      return;
+    }
+
+    setIsBookmarkLoading(true);
+    const method = isBookmarked ? 'DELETE' : 'POST';
+    try {
+      const res = await fetch('/api/bookmarks', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ anime_id: anime.id }),
+      });
+
+      if (res.ok) setIsBookmarked(!isBookmarked);
+      else console.error("Gagal mengubah status bookmark");
+
+    } catch (error) {
+      console.error("Failed to toggle bookmark:", error);
+    } finally {
+      setIsBookmarkLoading(false);
     }
   };
 
@@ -104,20 +151,38 @@ export default function AnimeDetailPage() {
 
         <div className="w-full md:w-2/3 lg:w-3/4">
           <h1 className="text-4xl font-bold mb-2">{anime.title}</h1>
+          
+          <div className="flex items-center gap-4 mb-4">
+              {isLoggedIn && (
+                  <button
+                      onClick={handleToggleBookmark}
+                      disabled={isBookmarkLoading}
+                      className={`px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 flex items-center gap-2 ${
+                          isBookmarked
+                          ? 'bg-red-600 hover:bg-red-700 text-white'
+                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                      } disabled:bg-gray-500 disabled:cursor-not-allowed`}
+                  >
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                          <path fillRule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clipRule="evenodd" />
+                      </svg>
+                      {isBookmarkLoading ? 'Memuat...' : (isBookmarked ? 'Hapus Bookmark' : 'Tambah Bookmark')}
+                  </button>
+              )}
+          </div>
+
           <div className="flex items-center gap-4 text-gray-400 mb-4">
             <span>{anime.anime_type}</span>
             <span>&bull;</span>
             <span>{anime.status}</span>
             <span>&bull;</span>
             <span>Rating: {anime.rating_score}</span>
-            {/* --- PERUBAHAN DI SINI --- */}
             {anime.info?.studio && (
               <>
                 <span>&bull;</span>
                 <span>Studio: {anime.info.studio}</span>
               </>
             )}
-            {/* ----------------------- */}
           </div>
           <div className="flex flex-wrap gap-2 mb-6">
             {anime.genres.map((genre) => (
@@ -155,6 +220,10 @@ export default function AnimeDetailPage() {
       </div>
       
       <CommentSection animeId={anime.id} />
+
+      {/* --- INI BAGIAN YANG DITAMBAHKAN --- */}
+      <Recommendations animeId={anime.id} />
+      {/* ---------------------------------- */}
     </div>
   );
 }

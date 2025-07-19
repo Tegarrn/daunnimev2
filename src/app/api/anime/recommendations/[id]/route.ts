@@ -13,7 +13,6 @@ export async function GET(
   }
 
   try {
-    // 1. Ambil genre dari anime yang sedang dilihat
     const { data: currentAnime, error: currentAnimeError } = await supabase
       .from('anime')
       .select('genres')
@@ -26,19 +25,17 @@ export async function GET(
 
     const targetGenres = currentAnime.genres;
 
-    // 2. Cari anime lain yang memiliki salah satu genre yang sama
     const { data: recommendedAnime, error: recommendError } = await supabase
       .from('anime')
       .select('*')
-      .overlaps('genres', targetGenres) // Mencari anime yang genrenya beririsan
-      .neq('id', animeIdToExclude)      // Mengecualikan anime yang sedang dilihat
-      .limit(10); // Ambil 10 untuk diacak
+      .overlaps('genres', targetGenres)
+      .neq('id', animeIdToExclude)
+      .limit(10);
 
     if (recommendError) {
       throw new Error(recommendError.message);
     }
     
-    // Acak hasilnya dan ambil 6 teratas untuk variasi
     const shuffled = recommendedAnime.sort(() => 0.5 - Math.random());
     const recommendations = shuffled.slice(0, 6);
 
