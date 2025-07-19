@@ -1,16 +1,32 @@
-// src/app/anime/page.tsx
-
-import AnimeCard from '@/components/AnimeCard';
+/*
+================================================================================
+| FILE: src/app/anime/page.tsx
+| DESKRIPSI: Halaman utama untuk menampilkan semua anime.
+| PERAN: Server Component - Mengambil data awal dari server.
+================================================================================
+*/
 import { Anime } from '@/types';
+import AnimeListContainer from '@/components/AnimeListContainer'; // Impor komponen baru
 
+// Fungsi ini berjalan di server untuk mengambil semua data anime
 async function getAllAnime(): Promise<Anime[]> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) return [];
+  // Jika URL API tidak ada, kembalikan array kosong untuk mencegah error
+  if (!apiUrl) {
+    console.error("API URL is not defined.");
+    return [];
+  }
 
   try {
-    // Mengambil semua data anime dari endpoint yang sudah ada
-    const res = await fetch(`${apiUrl}/anime`, { next: { revalidate: 3600 } }); // Revalidate setiap 1 jam
-    if (!res.ok) return [];
+    // Mengambil data dari endpoint API internal
+    const res = await fetch(`${apiUrl}/anime`, { 
+      next: { revalidate: 3600 } // Cache data selama 1 jam
+    });
+
+    if (!res.ok) {
+      console.error("Failed to fetch anime list:", res.statusText);
+      return [];
+    }
     
     const { data } = await res.json();
     return data || [];
@@ -21,22 +37,17 @@ async function getAllAnime(): Promise<Anime[]> {
 }
 
 export default async function AllAnimePage() {
+  // Panggil fungsi untuk mendapatkan data di server
   const animeList = await getAllAnime();
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-white mb-6">Daftar Semua Anime</h1>
-      {animeList.length > 0 ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-8">
-          {animeList.map((anime) => (
-            <AnimeCard key={anime.id} anime={anime} />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-20 text-gray-400">
-          <p>Tidak ada data anime yang ditemukan.</p>
-        </div>
-      )}
+      
+      {/* Kirim data awal (initialAnimeList) sebagai prop ke Client Component.
+        Ini membuat halaman memuat dengan cepat dengan data yang sudah ada.
+      */}
+      <AnimeListContainer initialAnimeList={animeList} />
     </div>
   );
 }

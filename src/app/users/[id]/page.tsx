@@ -5,6 +5,8 @@ import { useState, useEffect, ChangeEvent } from 'react';
 import { useParams, notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import AnimeCard from '@/components/AnimeCard';
+import { Anime } from '@/types';
 
 // Tipe data untuk profil pengguna
 interface UserProfile {
@@ -13,7 +15,7 @@ interface UserProfile {
   level: number;
   xp: number;
   avatar_url: string | null;
-  member_id: number; // Kolom baru untuk ID Pendaftaran
+  member_id: number;
 }
 
 // Tipe data untuk riwayat tontonan
@@ -26,6 +28,13 @@ interface WatchHistoryItem {
   }
 }
 
+// Tipe data untuk bookmark
+interface BookmarkItem {
+    id: number;
+    created_at: string;
+    anime: Anime;
+}
+
 export default function UserProfilePage() {
   const params = useParams();
   const userId = params.id as string;
@@ -33,6 +42,7 @@ export default function UserProfilePage() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [history, setHistory] = useState<WatchHistoryItem[]>([]);
+  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [isOwnProfile, setIsOwnProfile] = useState(false);
@@ -40,26 +50,68 @@ export default function UserProfilePage() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   useEffect(() => {
-    if (!userId) return;
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    async function getPublicProfileData() {
+      // Hentikan proses jika userId belum tersedia dari router.
+      if (!userId) {
+        return;
+      }
+      
+      setLoading(true);
+      
+      try {
+        // Cek sesi pengguna terlebih dahulu
+        const { data: { session } } = await supabase.auth.getSession();
         if (session && session.user.id === userId) {
             setIsOwnProfile(true);
         }
-    });
 
-    async function getPublicProfileData() {
-      // Query select('*') akan otomatis menyertakan kolom baru 'member_id'
-      const { data: profileData, error: profileError } = await supabase.from('profiles').select('*').eq('id', userId).single();
-      if (profileError) { notFound(); return; }
-      setProfile(profileData);
+        // Langkah 1: Ambil data profil. Ini adalah data paling penting.
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
 
-      const { data: historyData, error: historyError } = await supabase.from('watch_history').select('id, watched_at, episodes!inner(episode_number, anime!inner(id, title, thumbnail_gdrive_id))').eq('user_id', userId).order('watched_at', { ascending: false }).limit(10);
-      if (historyError) console.error('Error fetching history:', historyError);
-      else setHistory(historyData as unknown as WatchHistoryItem[]);
+        // Jika profil tidak ditemukan atau ada error, hentikan proses dan tampilkan 404.
+        if (profileError) {
+          console.error("Error saat mengambil profil:", profileError.message);
+          setLoading(false);
+          notFound();
+          return;
+        }
+        setProfile(profileData);
+        
+        // Setelah profil berhasil didapat, baru ambil data lainnya.
+        // Ini memastikan halaman bisa tampil meskipun data sekunder gagal.
+        const [historyRes, bookmarkRes] = await Promise.all([
+            supabase
+              .from('watch_history')
+              .select('id, watched_at, episodes!inner(episode_number, anime!inner(id, title, thumbnail_gdrive_id))')
+              .eq('user_id', userId)
+              .order('watched_at', { ascending: false })
+              .limit(10),
+            supabase
+              .from('bookmarks')
+              .select('id, created_at, anime!inner(*)')
+              .eq('user_id', userId)
+              .order('created_at', { ascending: false })
+        ]);
 
-      setLoading(false);
+        if (historyRes.error) console.error('Error mengambil riwayat:', historyRes.error.message);
+        else setHistory(historyRes.data as unknown as WatchHistoryItem[]);
+
+        if (bookmarkRes.error) console.error('Error mengambil bookmarks:', bookmarkRes.error.message);
+        else setBookmarks(bookmarkRes.data as unknown as BookmarkItem[]);
+
+      } catch (error) {
+        console.error("Terjadi error tak terduga:", error);
+        setProfile(null); // Set profil ke null jika ada error
+      } finally {
+        // Pastikan loading selalu dihentikan setelah semua proses selesai.
+        setLoading(false);
+      }
     }
+    
     getPublicProfileData();
   }, [userId]);
 
@@ -95,10 +147,11 @@ export default function UserProfilePage() {
   };
 
   if (loading) {
-    return <div className="text-center text-white py-20">Loading profile...</div>;
+    return <div className="text-center text-white py-20">Loading...</div>;
   }
+
   if (!profile) {
-    return notFound();
+    notFound();
   }
 
   return (
@@ -115,7 +168,6 @@ export default function UserProfilePage() {
                 )}
               </div>
               <h1 className="text-3xl font-bold">{profile.username}</h1>
-              {/* Menampilkan ID Pendaftaran */}
               <p className="text-sm text-gray-400 mt-1">Anggota #{profile.member_id}</p>
               
               <div className="mt-4 text-lg">
@@ -161,6 +213,21 @@ export default function UserProfilePage() {
               </Link>
             )) : (
               <p className="text-gray-400">Pengguna ini belum menonton apa pun.</p>
+            )}
+          </div>
+
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6">Daftar Tontonan (Bookmark)</h2>
+            {bookmarks.length > 0 ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-8">
+                {bookmarks.map(item => (
+                  <AnimeCard key={`bookmark-${item.id}`} anime={item.anime} />
+                ))}
+              </div>
+            ) : (
+              <div className="p-8 bg-gray-800 rounded-lg">
+                <p className="text-gray-400 text-center">Pengguna ini belum memiliki bookmark.</p>
+              </div>
             )}
           </div>
         </div>
