@@ -6,10 +6,22 @@ export interface Anime {
   synopsis: string;
   genres: string[];
   thumbnail_gdrive_id: string;
-  info: any; // Anda bisa membuat tipe yang lebih spesifik jika perlu
+  info: any; 
   gdrive_folder_id: string;
   status: string;
   anime_type: string;
   release_date: string;
-  rating_score: number;
+  rating_score: number; // Ini adalah skor asli, kita akan tambahkan skor dari pengguna
+}
+
+export interface Rating {
+  id: number;
+  score: number;
+  review: string | null;
+  created_at: string;
+  profiles: {
+    id: string;
+    username: string;
+    avatar_url: string | null;
+  }
 }

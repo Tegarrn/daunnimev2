@@ -6,7 +6,8 @@ import { notFound, useParams } from 'next/navigation';
 import VideoPlayer from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabaseClient';
 import CommentSection from '@/components/CommentSection';
-import Recommendations from '@/components/Recommendations'; // <-- PASTIKAN IMPORT INI ADA
+import Recommendations from '@/components/Recommendations';
+import RatingSystem from '@/components/RatingSystem'; // <-- IMPORT KOMPONEN BARU
 
 interface Episode {
   id: number;
@@ -219,11 +220,11 @@ export default function AnimeDetailPage() {
         </div>
       </div>
       
+      {/* --- BAGIAN YANG DIPERBARUI --- */}
+      <RatingSystem animeId={anime.id} />
       <CommentSection animeId={anime.id} />
-
-      {/* --- INI BAGIAN YANG DITAMBAHKAN --- */}
       <Recommendations animeId={anime.id} />
-      {/* ---------------------------------- */}
+      {/* --------------------------- */}
     </div>
   );
 }

@@ -1,10 +1,3 @@
-/*
-================================================================================
-| FILE: src/app/anime/page.tsx
-| DESKRIPSI: Halaman utama untuk menampilkan semua anime.
-| PERAN: Server Component - Mengambil data awal dari server.
-================================================================================
-*/
 import { Anime } from '@/types';
 import AnimeListContainer from '@/components/AnimeListContainer'; // Impor komponen baru
 
