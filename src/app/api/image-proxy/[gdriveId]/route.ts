@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { gdriveId: string } }
-) {
-  const { gdriveId } = params;
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const gdriveId = pathSegments[pathSegments.length - 1];
 
   if (!gdriveId) {
     return new NextResponse(
