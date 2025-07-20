@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Anime } from '@/types';
 import { notFound, useParams } from 'next/navigation';
-import VideoPlayer from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabaseClient';
 import CommentSection from '@/components/CommentSection';
 import Recommendations from '@/components/Recommendations';
-import RatingSystem from '@/components/RatingSystem'; // <-- IMPORT KOMPONEN BARU
+import RatingSystem from '@/components/RatingSystem';
 
 interface Episode {
   id: number;
@@ -25,10 +25,11 @@ export default function AnimeDetailPage() {
 
   const [anime, setAnime] = useState<AnimeDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [averageUserScore, setAverageUserScore] = useState<number | null>(null);
+  const [displayedRatingType, setDisplayedRatingType] = useState<'default' | 'user'>('default');
 
   useEffect(() => {
     async function fetchAndSetData() {
@@ -69,23 +70,9 @@ export default function AnimeDetailPage() {
     fetchAndSetData();
   }, [id]);
 
-  const handleSelectEpisode = async (episode: Episode) => {
-    setSelectedEpisode(episode);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      await fetch('/api/watch-history', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ episode_id: episode.id }),
-      });
-    } catch (error) {
-      console.error("Failed to send watch history:", error);
-    }
-  };
+  const handleAverageScoreUpdate = useCallback((score: number | null) => {
+    setAverageUserScore(score);
+  }, []);
 
   const handleToggleBookmark = async () => {
     if (!anime) return;
@@ -127,19 +114,15 @@ export default function AnimeDetailPage() {
   
   const imageUrl = `/api/image-proxy/${anime.thumbnail_gdrive_id}`;
 
+  const ratingToShow = displayedRatingType === 'user' && averageUserScore 
+    ? averageUserScore.toFixed(1) 
+    : anime.rating_score.toFixed(1);
+  const ratingLabel = displayedRatingType === 'user' ? 'Rating Pengguna' : 'Rating Bawaan';
+
   return (
     <div className="container mx-auto px-4 py-8 text-white">
-      <div className="mb-8">
-        {selectedEpisode ? (
-          <VideoPlayer gdriveFileId={selectedEpisode.gdrive_file_id_720p} />
-        ) : (
-          <div className="w-full aspect-video bg-gray-800 border-2 border-dashed border-gray-600 rounded-lg flex items-center justify-center">
-            <p className="text-gray-400">Pilih episode untuk mulai menonton</p>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-col md:flex-row gap-8">
+      {/* Placeholder sudah dihapus dari sini */}
+      <div className="flex flex-col md:flex-row gap-8 mb-8"> {/* Menambahkan margin bottom di sini */}
         <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
           <div className="aspect-[2/3] w-full bg-gray-700 rounded-lg overflow-hidden relative">
             <img 
@@ -172,12 +155,23 @@ export default function AnimeDetailPage() {
               )}
           </div>
 
-          <div className="flex items-center gap-4 text-gray-400 mb-4">
+          <div className="flex flex-wrap items-center gap-4 text-gray-400 mb-4">
             <span>{anime.anime_type}</span>
             <span>&bull;</span>
             <span>{anime.status}</span>
             <span>&bull;</span>
-            <span>Rating: {anime.rating_score}</span>
+            <div className="flex items-center gap-2">
+                <span>{ratingLabel}: {ratingToShow}</span>
+                {averageUserScore !== null && (
+                    <button 
+                        onClick={() => setDisplayedRatingType(prev => prev === 'default' ? 'user' : 'default')}
+                        className="p-1 text-xs bg-gray-700 rounded-md hover:bg-gray-600"
+                        title="Ganti Tampilan Rating"
+                    >
+                        🔄
+                    </button>
+                )}
+            </div>
             {anime.info?.studio && (
               <>
                 <span>&bull;</span>
@@ -206,25 +200,20 @@ export default function AnimeDetailPage() {
           {anime.episodes
             .sort((a, b) => a.episode_number.localeCompare(b.episode_number, undefined, { numeric: true }))
             .map((ep) => (
-            <button 
+            <Link 
               key={ep.id} 
-              onClick={() => handleSelectEpisode(ep)}
-              className={`text-center p-3 rounded-md border transition-colors w-full ${selectedEpisode?.id === ep.id 
-                ? 'bg-indigo-600 border-indigo-500 font-bold' 
-                : 'bg-gray-800 border-gray-700 hover:bg-gray-700'
-              }`}
+              href={`/anime/${anime.id}/${ep.id}`}
+              className="text-center p-3 rounded-md border transition-colors w-full bg-gray-800 border-gray-700 hover:bg-indigo-600 hover:border-indigo-500"
             >
               Eps {ep.episode_number}
-            </button>
+            </Link>
           ))}
         </div>
       </div>
       
-      {/* --- BAGIAN YANG DIPERBARUI --- */}
-      <RatingSystem animeId={anime.id} />
+      <RatingSystem animeId={anime.id} onAverageScoreUpdate={handleAverageScoreUpdate} />
       <CommentSection animeId={anime.id} />
       <Recommendations animeId={anime.id} />
-      {/* --------------------------- */}
     </div>
   );
 }

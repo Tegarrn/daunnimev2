@@ -8,11 +8,13 @@ import Link from 'next/link';
 
 interface RatingSystemProps {
   animeId: number;
+  // Prop baru untuk mengirim data ke parent component
+  onAverageScoreUpdate: (score: number | null) => void;
 }
 
-export default function RatingSystem({ animeId }: RatingSystemProps) {
+export default function RatingSystem({ animeId, onAverageScoreUpdate }: RatingSystemProps) {
   const [ratings, setRatings] = useState<Rating[]>([]);
-  const [averageScore, setAverageScore] = useState<number | null>(null);
+  // Hapus state averageScore dari sini karena akan dikelola oleh parent
   const [userScore, setUserScore] = useState(0);
   const [userReview, setUserReview] = useState('');
   const [loading, setLoading] = useState(true);
@@ -29,15 +31,17 @@ export default function RatingSystem({ animeId }: RatingSystemProps) {
         const res = await fetch(`/api/ratings?anime_id=${animeId}`);
         const { data, averageScore } = await res.json();
         setRatings(data || []);
-        setAverageScore(averageScore);
+        // Kirim skor rata-rata ke parent component saat data diterima
+        onAverageScoreUpdate(averageScore);
       } catch (error) {
         console.error("Failed to fetch ratings", error);
+        onAverageScoreUpdate(null); // Kirim null jika gagal
       } finally {
         setLoading(false);
       }
     }
     fetchRatings();
-  }, [animeId]);
+  }, [animeId, onAverageScoreUpdate]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -65,11 +69,11 @@ export default function RatingSystem({ animeId }: RatingSystemProps) {
       });
 
       if (res.ok) {
-        // Refresh ratings after submission
         const newRes = await fetch(`/api/ratings?anime_id=${animeId}`);
         const { data, averageScore } = await newRes.json();
         setRatings(data || []);
-        setAverageScore(averageScore);
+        // Perbarui skor rata-rata di parent component setelah submit
+        onAverageScoreUpdate(averageScore);
         alert('Ulasan Anda berhasil dikirim!');
       }
     } catch (error) {
