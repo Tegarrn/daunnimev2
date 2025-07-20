@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabaseClient';
 import { NextRequest, NextResponse } from 'next/server';
 
+// The type for the second argument needs to be corrected here.
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
