@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, notFound, useRouter } from 'next/navigation';
+import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import VideoPlayer from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabaseClient';
 import { Anime } from '@/types';
-import CommentSection from '@/components/CommentSection'; // <-- 1. IMPORT KOMPONEN
+import CommentSection from '@/components/CommentSection';
 
 interface Episode {
   id: number;
@@ -20,14 +20,12 @@ interface AnimeDetail extends Anime {
 
 export default function WatchPage() {
   const params = useParams();
-  const router = useRouter();
   const animeId = params.id as string;
   const episodeId = parseInt(params.episodeId as string, 10);
 
   const [anime, setAnime] = useState<AnimeDetail | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Mengambil data anime
   useEffect(() => {
     if (!animeId) return;
 
@@ -51,7 +49,6 @@ export default function WatchPage() {
     fetchAnimeData();
   }, [animeId]);
 
-  // Mencari episode yang sedang ditonton dan episode selanjutnya/sebelumnya
   const { currentEpisode, nextEpisode, prevEpisode } = useMemo(() => {
     if (!anime) return { currentEpisode: null, nextEpisode: null, prevEpisode: null };
 
@@ -69,7 +66,6 @@ export default function WatchPage() {
     };
   }, [anime, episodeId]);
 
-  // Mengirim riwayat tontonan
   useEffect(() => {
     if (!currentEpisode) return;
 
@@ -114,12 +110,10 @@ export default function WatchPage() {
       </header>
       
       <main className="flex-grow container mx-auto px-4 py-8 w-full">
-        {/* Video player section */}
         <div className="w-full max-w-5xl mx-auto aspect-video mb-8 bg-black rounded-lg overflow-hidden">
           <VideoPlayer gdriveFileId={currentEpisode.gdrive_file_id_720p} />
         </div>
         
-        {/* <-- 2. TAMBAHKAN KOMPONEN DI SINI --> */}
         <div className="w-full max-w-4xl mx-auto">
           <CommentSection animeId={anime.id} />
         </div>

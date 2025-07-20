@@ -1,13 +1,10 @@
-// src/app/api/anime/latest/route.ts
-
 import { supabase } from '@/lib/supabaseClient';
 import { NextResponse } from 'next/server';
 
-export const revalidate = 3600; // Cache selama 1 jam
+export const revalidate = 3600;
 
 export async function GET() {
   try {
-    // Mengambil 12 anime terbaru berdasarkan kolom created_at
     const { data, error } = await supabase
       .from('anime')
       .select('*')
@@ -21,9 +18,10 @@ export async function GET() {
 
     return NextResponse.json({ data });
 
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return new NextResponse(
-      JSON.stringify({ error: 'Gagal mengambil data anime terbaru', details: error.message }),
+      JSON.stringify({ error: 'Gagal mengambil data anime terbaru', details: errorMessage }),
       { status: 500 }
     );
   }

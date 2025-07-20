@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-// --- POST: Menambah Komentar ---
 export async function POST(request: NextRequest) {
   console.log("--- POST /api/comments CALLED ---");
   const { anime_id, content } = await request.json();
@@ -40,7 +39,7 @@ export async function POST(request: NextRequest) {
     const { data, error: insertError } = await supabase
       .from('comments')
       .insert({ anime_id, content, user_id })
-      .select('*, profiles(id, username, avatar_url)') // Meminta ID profil
+      .select('*, profiles(id, username, avatar_url)')
       .single();
 
     if (insertError) throw insertError;
@@ -52,16 +51,14 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({ data });
 
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     console.error('[POST /api/comments ERROR]', error);
-    return new NextResponse(JSON.stringify({ error: 'Failed to post comment', details: error.message }), { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Failed to post comment', details: errorMessage }), { status: 500 });
   }
 }
 
-
-// --- GET: Mengambil Komentar ---
 export async function GET(request: NextRequest) {
-    const { createClient } = require('@supabase/supabase-js');
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
 
     const { searchParams } = new URL(request.url);
@@ -74,15 +71,16 @@ export async function GET(request: NextRequest) {
     try {
         const { data, error } = await supabase
             .from('comments')
-            .select('*, profiles(id, username, avatar_url)') // Meminta ID profil
+            .select('*, profiles(id, username, avatar_url)')
             .eq('anime_id', anime_id)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
         return NextResponse.json({ data });
 
-    } catch (error: any) {
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
         console.error('[GET /api/comments ERROR]', error);
-        return new NextResponse(JSON.stringify({ error: 'Failed to fetch comments', details: error.message }), { status: 500 });
+        return new NextResponse(JSON.stringify({ error: 'Failed to fetch comments', details: errorMessage }), { status: 500 });
     }
 }

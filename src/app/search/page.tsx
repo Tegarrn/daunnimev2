@@ -1,5 +1,3 @@
-// src/app/search/page.tsx
-
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -47,7 +45,9 @@ function SearchResults() {
           ))}
         </div>
       ) : (
-        <p className="text-center text-gray-400 py-20">Tidak ada hasil yang ditemukan untuk "{query}".</p>
+        <p className="text-center text-gray-400 py-20">
+          {`Tidak ada hasil yang ditemukan untuk "${query}".`}
+        </p>
       )}
     </>
   );

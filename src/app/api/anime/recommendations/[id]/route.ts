@@ -41,9 +41,10 @@ export async function GET(
 
     return NextResponse.json({ data: recommendations });
 
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return new NextResponse(
-      JSON.stringify({ error: 'Gagal mengambil rekomendasi', details: error.message }),
+      JSON.stringify({ error: 'Gagal mengambil rekomendasi', details: errorMessage }),
       { status: 500 }
     );
   }

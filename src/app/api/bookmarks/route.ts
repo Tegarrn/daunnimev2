@@ -1,8 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Fungsi helper untuk mendapatkan Supabase client yang sudah terotentikasi dengan token pengguna.
-// Ini memastikan semua operasi (tambah/hapus) dilakukan oleh pengguna yang sah.
 async function getSupabaseClient(request: NextRequest) {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -24,16 +22,11 @@ async function getSupabaseClient(request: NextRequest) {
   return { user, error: null, client: supabase };
 }
 
-// Handler untuk GET request
-// Digunakan untuk 2 kasus:
-// 1. Mengecek status bookmark satu anime untuk pengguna yang login.
-// 2. Mengambil semua daftar bookmark untuk ditampilkan di halaman profil publik.
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const anime_id = searchParams.get('anime_id');
   const user_id_param = searchParams.get('user_id');
 
-  // Kasus 2: Mengambil daftar bookmark untuk profil publik
   if (user_id_param) {
       const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
       const { data, error } = await supabase
@@ -48,7 +41,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data });
   }
 
-  // Kasus 1: Cek status bookmark untuk pengguna yang login
   const { user, error: authError, client } = await getSupabaseClient(request);
   if (authError || !user || !client) {
     return new NextResponse(JSON.stringify({ error: authError }), { status: 401 });
@@ -67,16 +59,15 @@ export async function GET(request: NextRequest) {
       .single();
 
     return NextResponse.json({ isBookmarked: !!data, error: error?.message });
-  } catch (error: any) {
-    // Tidak perlu mengembalikan error jika tidak ditemukan (single() akan error), cukup kembalikan isBookmarked: false
-    if (error.code === 'PGRST116') {
+  } catch (error) {
+    const err = error as { code: string, message: string };
+    if (err.code === 'PGRST116') {
         return NextResponse.json({ isBookmarked: false });
     }
-    return new NextResponse(JSON.stringify({ error: 'Failed to check bookmark status', details: error.message }), { status: 500 });
+    return new NextResponse(JSON.stringify({ error: 'Failed to check bookmark status', details: err.message }), { status: 500 });
   }
 }
 
-// Handler untuk POST request: Menambah bookmark baru
 export async function POST(request: NextRequest) {
   const { anime_id } = await request.json();
   const { user, error: authError, client } = await getSupabaseClient(request);
@@ -98,12 +89,12 @@ export async function POST(request: NextRequest) {
 
     if (error) throw error;
     return NextResponse.json({ data });
-  } catch (error: any) {
-    return new NextResponse(JSON.stringify({ error: 'Failed to add bookmark', details: error.message }), { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return new NextResponse(JSON.stringify({ error: 'Failed to add bookmark', details: errorMessage }), { status: 500 });
   }
 }
 
-// Handler untuk DELETE request: Menghapus bookmark
 export async function DELETE(request: NextRequest) {
     const { anime_id } = await request.json();
     const { user, error: authError, client } = await getSupabaseClient(request);
@@ -125,7 +116,8 @@ export async function DELETE(request: NextRequest) {
   
       if (error) throw error;
       return NextResponse.json({ message: 'Bookmark removed successfully' });
-    } catch (error: any) {
-      return new NextResponse(JSON.stringify({ error: 'Failed to remove bookmark', details: error.message }), { status: 500 });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      return new NextResponse(JSON.stringify({ error: 'Failed to remove bookmark', details: errorMessage }), { status: 500 });
     }
-  }
+}

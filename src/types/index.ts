@@ -1,4 +1,9 @@
-// Tipe ini dibuat berdasarkan skema tabel 'anime' di dokumentasi Anda
+export interface AnimeInfo {
+  studio?: string;
+  duration?: string;
+  [key: string]: unknown;
+}
+
 export interface Anime {
   id: number;
   created_at: string;
@@ -6,12 +11,12 @@ export interface Anime {
   synopsis: string;
   genres: string[];
   thumbnail_gdrive_id: string;
-  info: any; 
+  info: AnimeInfo | null;
   gdrive_folder_id: string;
   status: string;
   anime_type: string;
   release_date: string;
-  rating_score: number; // Ini adalah skor asli, kita akan tambahkan skor dari pengguna
+  rating_score: number;
 }
 
 export interface Rating {

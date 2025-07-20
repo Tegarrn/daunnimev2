@@ -51,7 +51,6 @@ export default function UserProfilePage() {
 
   useEffect(() => {
     async function getPublicProfileData() {
-      // Hentikan proses jika userId belum tersedia dari router.
       if (!userId) {
         return;
       }
@@ -59,20 +58,17 @@ export default function UserProfilePage() {
       setLoading(true);
       
       try {
-        // Cek sesi pengguna terlebih dahulu
         const { data: { session } } = await supabase.auth.getSession();
         if (session && session.user.id === userId) {
             setIsOwnProfile(true);
         }
 
-        // Langkah 1: Ambil data profil. Ini adalah data paling penting.
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', userId)
           .single();
 
-        // Jika profil tidak ditemukan atau ada error, hentikan proses dan tampilkan 404.
         if (profileError) {
           console.error("Error saat mengambil profil:", profileError.message);
           setLoading(false);
@@ -81,8 +77,6 @@ export default function UserProfilePage() {
         }
         setProfile(profileData);
         
-        // Setelah profil berhasil didapat, baru ambil data lainnya.
-        // Ini memastikan halaman bisa tampil meskipun data sekunder gagal.
         const [historyRes, bookmarkRes] = await Promise.all([
             supabase
               .from('watch_history')
@@ -105,9 +99,8 @@ export default function UserProfilePage() {
 
       } catch (error) {
         console.error("Terjadi error tak terduga:", error);
-        setProfile(null); // Set profil ke null jika ada error
+        setProfile(null);
       } finally {
-        // Pastikan loading selalu dihentikan setelah semua proses selesai.
         setLoading(false);
       }
     }
@@ -134,8 +127,9 @@ export default function UserProfilePage() {
       if (updateError) throw updateError;
       setProfile({ ...profile, avatar_url: publicUrl });
       setAvatarFile(null);
-    } catch (error: any) {
-      alert(`Error: ${error.message}`);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      alert(`Error: ${errorMessage}`);
     } finally {
       setUploading(false);
     }

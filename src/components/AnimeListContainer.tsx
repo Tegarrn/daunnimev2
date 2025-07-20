@@ -1,10 +1,3 @@
-/*
-================================================================================
-| FILE: src/components/AnimeListContainer.tsx
-| DESKRIPSI: Komponen untuk menampilkan daftar anime dan logika filter genre.
-| PERAN: Client Component - Mengelola interaksi pengguna di browser.
-================================================================================
-*/
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -12,7 +5,6 @@ import { Anime } from '@/types';
 import AnimeCard from './AnimeCard';
 import GenreFilter from './GenreFilter';
 
-// Kategori genre sesuai permintaan Anda
 const genreCategories = {
   'Aksi & Pertarungan': ['Action', 'Martial Arts', 'Samurai', 'Supernatural', 'Delinquents', 'DPS', 'Mythology'],
   'Petualangan & Dunia Baru': ['Adventure', 'Fantasy', 'Isekai', 'Reincarnation', 'Time Travel', 'Video Game'],
@@ -31,21 +23,18 @@ export default function AnimeListContainer({ initialAnimeList }: AnimeListContai
   const [selectedCategory, setSelectedCategory] = useState('Semua');
   const [filteredAnime, setFilteredAnime] = useState<Anime[]>(initialAnimeList);
 
-  // useEffect ini akan berjalan setiap kali pengguna memilih kategori baru.
   useEffect(() => {
     if (selectedCategory === 'Semua') {
       setFilteredAnime(initialAnimeList);
     } else {
       const activeGenres = genreCategories[selectedCategory as keyof typeof genreCategories];
       const newFilteredList = initialAnimeList.filter(anime =>
-        // Cek apakah ada genre dari anime yang termasuk dalam daftar genre kategori yang aktif
         anime.genres.some(genre => activeGenres.includes(genre))
       );
       setFilteredAnime(newFilteredList);
     }
   }, [selectedCategory, initialAnimeList]);
 
-  // Jika data awal kosong (misalnya karena API gagal), tampilkan pesan.
   if (!initialAnimeList || initialAnimeList.length === 0) {
     return (
         <div className="text-center py-20 text-gray-400 bg-gray-800 rounded-lg">
@@ -69,7 +58,7 @@ export default function AnimeListContainer({ initialAnimeList }: AnimeListContai
         </div>
       ) : (
         <div className="text-center py-20 text-gray-400 bg-gray-800 rounded-lg">
-          <p>Tidak ada anime yang cocok dengan kategori "{selectedCategory}".</p>
+          <p>{`Tidak ada anime yang cocok dengan kategori "${selectedCategory}".`}</p>
         </div>
       )}
     </div>

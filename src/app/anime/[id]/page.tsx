@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Anime } from '@/types';
 import { notFound, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
@@ -121,14 +122,15 @@ export default function AnimeDetailPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 text-white">
-      {/* Placeholder sudah dihapus dari sini */}
-      <div className="flex flex-col md:flex-row gap-8 mb-8"> {/* Menambahkan margin bottom di sini */}
+      <div className="flex flex-col md:flex-row gap-8 mb-8">
         <div className="w-full md:w-1/3 lg:w-1/4 flex-shrink-0">
           <div className="aspect-[2/3] w-full bg-gray-700 rounded-lg overflow-hidden relative">
-            <img 
+            <Image 
               src={imageUrl} 
               alt={`Thumbnail for ${anime.title}`} 
-              className="object-cover object-center w-full h-full"
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover object-center"
             />
           </div>
         </div>

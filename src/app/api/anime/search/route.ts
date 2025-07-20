@@ -1,5 +1,3 @@
-// src/app/api/anime/search/route.ts
-
 import { supabase } from '@/lib/supabaseClient';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -15,7 +13,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Mencari anime yang judulnya cocok (case-insensitive) dengan query
     const { data, error } = await supabase
       .from('anime')
       .select('*')
@@ -28,9 +25,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ data });
 
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return new NextResponse(
-      JSON.stringify({ error: 'Gagal melakukan pencarian', details: error.message }),
+      JSON.stringify({ error: 'Gagal melakukan pencarian', details: errorMessage }),
       { status: 500 }
     );
   }
