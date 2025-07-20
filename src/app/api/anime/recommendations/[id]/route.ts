@@ -23,7 +23,7 @@ export async function GET(
       .single();
 
     if (currentAnimeError || !currentAnime) {
-      throw new Error('Anime tidak ditemukan');
+      throw new Error(`Anime dengan ID ${animeIdToExclude} tidak ditemukan`);
     }
 
     const targetGenres = currentAnime.genres;
@@ -46,6 +46,7 @@ export async function GET(
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`Error fetching recommendations for anime ID ${id}:`, errorMessage);
     return new NextResponse(
       JSON.stringify({
         error: 'Gagal mengambil rekomendasi',

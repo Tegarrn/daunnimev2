@@ -2,9 +2,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  const { episode_id } = await request.json();
-
   try {
+    const { episode_id } = await request.json();
     const authHeader = request.headers.get('Authorization');
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -40,7 +39,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (!existingRecord) {
-      const { error: insertError } = await supabase.from('watch_history').insert({ user_id, episode_id });
+      const { error: insertError } = await supabase
+        .from('watch_history')
+        .insert({ user_id, episode_id });
       if (insertError) throw insertError;
 
       const { error: rpcError } = await supabase.rpc('add_xp', {

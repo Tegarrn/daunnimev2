@@ -30,12 +30,15 @@ export async function GET(
           { status: 404 }
         );
       }
-      throw error; // Lempar objek error asli
+      // Re-throw the original error object to be caught below
+      throw error;
     }
 
     return NextResponse.json({ data });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`Error fetching anime ID ${id}:`, errorMessage);
     return new NextResponse(
       JSON.stringify({
         error: 'Gagal mengambil data detail anime',
