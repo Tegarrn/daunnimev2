@@ -1,11 +1,10 @@
 import { supabase } from '@/lib/supabaseClient';
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const id = pathSegments[pathSegments.length - 1];
 
   try {
     const { data, error } = await supabase
@@ -30,7 +29,6 @@ export async function GET(
           { status: 404 }
         );
       }
-      // Re-throw the original error object to be caught below
       throw error;
     }
 
@@ -39,11 +37,9 @@ export async function GET(
     const errorMessage =
       error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`Error fetching anime ID ${id}:`, errorMessage);
+
     return new NextResponse(
-      JSON.stringify({
-        error: 'Gagal mengambil data detail anime',
-        details: errorMessage,
-      }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500 }
     );
   }
