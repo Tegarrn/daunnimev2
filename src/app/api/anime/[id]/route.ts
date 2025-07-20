@@ -1,7 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
 import { NextRequest, NextResponse } from 'next/server';
 
-// The type for the second argument needs to be corrected here.
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -11,14 +10,16 @@ export async function GET(
   try {
     const { data, error } = await supabase
       .from('anime')
-      .select(`
+      .select(
+        `
         *,
         episodes (
           id,
           episode_number,
           gdrive_file_id_720p
         )
-      `)
+      `
+      )
       .eq('id', id)
       .single();
 
@@ -31,13 +32,16 @@ export async function GET(
       }
       throw new Error(error.message);
     }
-    
-    return NextResponse.json({ data });
 
+    return NextResponse.json({ data });
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return new NextResponse(
-      JSON.stringify({ error: 'Gagal mengambil data detail anime', details: errorMessage }),
+      JSON.stringify({
+        error: 'Gagal mengambil data detail anime',
+        details: errorMessage,
+      }),
       { status: 500 }
     );
   }

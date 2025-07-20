@@ -26,7 +26,7 @@ export async function GET(
     const contentType = imageResponse.headers.get('Content-Type');
 
     if (!contentType || !contentType.startsWith('image/')) {
-        throw new Error('The fetched file is not a valid image.');
+      throw new Error('The fetched file is not a valid image.');
     }
 
     return new NextResponse(imageBuffer, {
@@ -36,12 +36,15 @@ export async function GET(
         'Cache-Control': 'public, max-age=604800, immutable',
       },
     });
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     console.error(`[IMAGE PROXY ERROR for ID ${gdriveId}]:`, errorMessage);
     return new NextResponse(
-      JSON.stringify({ error: 'Internal Server Error', details: errorMessage }),
+      JSON.stringify({
+        error: 'Internal Server Error',
+        details: errorMessage,
+      }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

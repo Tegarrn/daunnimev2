@@ -9,7 +9,10 @@ export async function GET(
   const animeIdToExclude = parseInt(id, 10);
 
   if (isNaN(animeIdToExclude)) {
-    return new NextResponse(JSON.stringify({ error: 'ID Anime tidak valid' }), { status: 400 });
+    return new NextResponse(
+      JSON.stringify({ error: 'ID Anime tidak valid' }),
+      { status: 400 }
+    );
   }
 
   try {
@@ -35,16 +38,19 @@ export async function GET(
     if (recommendError) {
       throw new Error(recommendError.message);
     }
-    
+
     const shuffled = recommendedAnime.sort(() => 0.5 - Math.random());
     const recommendations = shuffled.slice(0, 6);
 
     return NextResponse.json({ data: recommendations });
-
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage =
+      error instanceof Error ? error.message : 'An unknown error occurred';
     return new NextResponse(
-      JSON.stringify({ error: 'Gagal mengambil rekomendasi', details: errorMessage }),
+      JSON.stringify({
+        error: 'Gagal mengambil rekomendasi',
+        details: errorMessage,
+      }),
       { status: 500 }
     );
   }
