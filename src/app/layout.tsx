@@ -4,7 +4,8 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer'; // Impor Footer
+import Footer from '@/components/Footer';
+import { Suspense } from 'react'; // <-- 1. Import Suspense
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -21,7 +22,10 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${inter.className} bg-gray-900 flex flex-col min-h-screen`}>
-        <Navbar /> {/* Ini berfungsi sebagai header */}
+        <Suspense fallback={<div className="h-16 bg-gray-900"></div>}>
+          <Navbar />
+        </Suspense>
+        
         <main className="flex-grow">
           {children}
         </main>
