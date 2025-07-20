@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = context.params;
+  const { id } = params;
   const animeIdToExclude = parseInt(id, 10);
 
   if (isNaN(animeIdToExclude)) {
@@ -36,7 +36,7 @@ export async function GET(
       .limit(10);
 
     if (recommendError) {
-      throw new Error(recommendError.message);
+      throw recommendError;
     }
 
     const shuffled = recommendedAnime.sort(() => 0.5 - Math.random());

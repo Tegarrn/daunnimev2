@@ -3,9 +3,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
-  const { id } = context.params;
+  const { id } = params;
 
   try {
     const { data, error } = await supabase
@@ -30,13 +30,12 @@ export async function GET(
           { status: 404 }
         );
       }
-      throw new Error(error.message);
+      throw error; // Lempar objek error asli
     }
 
     return NextResponse.json({ data });
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : 'An unknown error occurred';
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
     return new NextResponse(
       JSON.stringify({
         error: 'Gagal mengambil data detail anime',

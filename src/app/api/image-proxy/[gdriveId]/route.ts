@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  context: { params: { gdriveId: string } }
+  { params }: { params: { gdriveId: string } }
 ) {
-  const { gdriveId } = context.params;
+  const { gdriveId } = params;
 
   if (!gdriveId) {
     return new NextResponse(
