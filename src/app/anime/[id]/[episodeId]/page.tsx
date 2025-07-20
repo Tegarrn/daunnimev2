@@ -6,6 +6,7 @@ import Link from 'next/link';
 import VideoPlayer from '@/components/VideoPlayer';
 import { supabase } from '@/lib/supabaseClient';
 import { Anime } from '@/types';
+import CommentSection from '@/components/CommentSection'; // <-- 1. IMPORT KOMPONEN
 
 interface Episode {
   id: number;
@@ -54,7 +55,6 @@ export default function WatchPage() {
   const { currentEpisode, nextEpisode, prevEpisode } = useMemo(() => {
     if (!anime) return { currentEpisode: null, nextEpisode: null, prevEpisode: null };
 
-    // Urutkan episode berdasarkan nomor untuk memastikan urutan yang benar
     const sortedEpisodes = [...anime.episodes].sort((a, b) => 
       a.episode_number.localeCompare(b.episode_number, undefined, { numeric: true })
     );
@@ -94,7 +94,7 @@ export default function WatchPage() {
   }, [currentEpisode]);
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen bg-black text-white">Loading player...</div>;
+    return <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white">Loading player...</div>;
   }
 
   if (!anime || !currentEpisode) {
@@ -102,8 +102,8 @@ export default function WatchPage() {
   }
 
   return (
-    <div className="bg-black text-white min-h-screen flex flex-col">
-      <header className="p-4 bg-gray-900/50 flex justify-between items-center">
+    <div className="bg-gray-900 text-white min-h-screen flex flex-col">
+      <header className="p-4 bg-black flex justify-between items-center sticky top-0 z-10 border-b border-gray-700">
         <div>
           <h1 className="text-xl font-bold truncate">{anime.title}</h1>
           <p className="text-sm text-gray-400">Episode {currentEpisode.episode_number}</p>
@@ -113,26 +113,32 @@ export default function WatchPage() {
         </Link>
       </header>
       
-      <main className="flex-grow flex flex-col items-center justify-center">
-        <div className="w-full max-w-6xl aspect-video">
+      <main className="flex-grow container mx-auto px-4 py-8 w-full">
+        {/* Video player section */}
+        <div className="w-full max-w-5xl mx-auto aspect-video mb-8 bg-black rounded-lg overflow-hidden">
           <VideoPlayer gdriveFileId={currentEpisode.gdrive_file_id_720p} />
+        </div>
+        
+        {/* <-- 2. TAMBAHKAN KOMPONEN DI SINI --> */}
+        <div className="w-full max-w-4xl mx-auto">
+          <CommentSection animeId={anime.id} />
         </div>
       </main>
 
-      <footer className="p-4 bg-gray-900/50 flex justify-center items-center gap-4">
+      <footer className="p-4 bg-black flex justify-center items-center gap-4 sticky bottom-0 z-10 border-t border-gray-700">
         {prevEpisode ? (
           <Link href={`/anime/${animeId}/${prevEpisode.id}`} className="px-4 py-2 bg-indigo-600 rounded-md hover:bg-indigo-700">
-            &larr; Episode Sebelumnya
+            &larr; Eps Sebelumnya
           </Link>
         ) : (
-          <button className="px-4 py-2 bg-gray-700 rounded-md cursor-not-allowed opacity-50" disabled>&larr; Episode Sebelumnya</button>
+          <button className="px-4 py-2 bg-gray-700 rounded-md cursor-not-allowed opacity-50" disabled>&larr; Eps Sebelumnya</button>
         )}
         {nextEpisode ? (
           <Link href={`/anime/${animeId}/${nextEpisode.id}`} className="px-4 py-2 bg-indigo-600 rounded-md hover:bg-indigo-700">
-            Episode Selanjutnya &rarr;
+            Eps Selanjutnya &rarr;
           </Link>
         ) : (
-          <button className="px-4 py-2 bg-gray-700 rounded-md cursor-not-allowed opacity-50" disabled>Episode Selanjutnya &rarr;</button>
+          <button className="px-4 py-2 bg-gray-700 rounded-md cursor-not-allowed opacity-50" disabled>Eps Selanjutnya &rarr;</button>
         )}
       </footer>
     </div>
