@@ -25,7 +25,6 @@ async function getSupabaseClient(request: NextRequest) {
 
 // --- GET: Fetch all ratings for a specific anime ---
 export async function GET(request: NextRequest) {
-    // For GET requests, we use the public anon key
     const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!);
     const { searchParams } = new URL(request.url);
     const anime_id = searchParams.get('anime_id');
@@ -37,7 +36,7 @@ export async function GET(request: NextRequest) {
     try {
         const { data, error } = await supabase
             .from('ratings')
-            .select('*, profiles(id, username, avatar_url)') // Join with profiles table
+            .select('*, profiles(id, username, avatar_url)')
             .eq('anime_id', anime_id)
             .order('created_at', { ascending: false });
 
@@ -52,8 +51,9 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({ data, averageScore: parseFloat(averageScore.toFixed(1)) });
 
-    } catch (error: any) {
-        return new NextResponse(JSON.stringify({ error: 'Failed to fetch ratings', details: error.message }), { status: 500 });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return new NextResponse(JSON.stringify({ error: 'Failed to fetch ratings', details: errorMessage }), { status: 500 });
     }
 }
 
@@ -71,12 +71,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Using 'upsert' to either insert a new rating or update an existing one.
-    // We select only the data from the 'ratings' table itself after the operation.
     const { data, error } = await client
       .from('ratings')
       .upsert({ user_id: user.id, anime_id, score, review: review || null })
-      .select() // <-- CORRECTED: Selects the inserted/updated row from 'ratings'
+      .select()
       .single();
 
     if (error) {
@@ -84,11 +82,10 @@ export async function POST(request: NextRequest) {
       throw error;
     }
     
-    // The client-side will refetch the full list with profile data,
-    // so just returning the successful operation is enough.
     return NextResponse.json({ data });
 
-  } catch (error: any) {
-    return new NextResponse(JSON.stringify({ error: 'Failed to submit rating', details: error.message }), { status: 500 });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    return new NextResponse(JSON.stringify({ error: 'Failed to submit rating', details: errorMessage }), { status: 500 });
   }
 }

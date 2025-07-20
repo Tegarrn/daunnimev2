@@ -6,7 +6,6 @@ export async function POST(request: NextRequest) {
   console.log('--- WATCH HISTORY API CALLED ---');
 
   try {
-    // 1. Ambil token dari Authorization header
     const authHeader = request.headers.get('Authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -17,9 +16,8 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const token = authHeader.split(' ')[1]; // Ambil token setelah "Bearer "
+    const token = authHeader.split(' ')[1];
     
-    // 2. Verifikasi token untuk mendapatkan data pengguna
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
@@ -34,7 +32,6 @@ export async function POST(request: NextRequest) {
     const user_id = user.id;
     const XP_PER_EPISODE = 10;
 
-    // ... sisa kode tetap sama persis ...
     const { data: existingRecord, error: checkError } = await supabase
       .from('watch_history')
       .select('id')
@@ -61,10 +58,11 @@ export async function POST(request: NextRequest) {
     console.log('Episode already watched.');
     return NextResponse.json({ message: 'Episode already watched' });
 
-  } catch (error: any) {
-    console.error('Watch History Error:', error.message);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error('Watch History Error:', errorMessage);
     return new NextResponse(
-      JSON.stringify({ error: 'Failed to process watch history', details: error.message }),
+      JSON.stringify({ error: 'Failed to process watch history', details: errorMessage }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

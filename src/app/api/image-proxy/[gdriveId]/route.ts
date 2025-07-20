@@ -13,11 +13,9 @@ export async function GET(
     );
   }
 
-  // Membuat URL download langsung dari Google Drive
   const directDownloadUrl = `https://drive.google.com/uc?export=download&id=${gdriveId}`;
 
   try {
-    // Langsung fetch gambar dari URL download tersebut
     const imageResponse = await fetch(directDownloadUrl);
 
     if (!imageResponse.ok) {
@@ -27,13 +25,10 @@ export async function GET(
     const imageBuffer = await imageResponse.arrayBuffer();
     const contentType = imageResponse.headers.get('Content-Type');
 
-    // Pastikan konten yang diterima adalah gambar
     if (!contentType || !contentType.startsWith('image/')) {
-        // Jika bukan gambar, file aslinya mungkin rusak atau bukan gambar
         throw new Error('The fetched file is not a valid image.');
     }
 
-    // Kirim kembali data gambar dengan header yang benar
     return new NextResponse(imageBuffer, {
       status: 200,
       headers: {
@@ -42,11 +37,11 @@ export async function GET(
       },
     });
 
-  } catch (error: any) {
-    console.error(`[IMAGE PROXY ERROR for ID ${gdriveId}]:`, error.message);
-    // Jika ada error, kembalikan response error agar mudah di-debug
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    console.error(`[IMAGE PROXY ERROR for ID ${gdriveId}]:`, errorMessage);
     return new NextResponse(
-      JSON.stringify({ error: 'Internal Server Error', details: error.message }),
+      JSON.stringify({ error: 'Internal Server Error', details: errorMessage }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
