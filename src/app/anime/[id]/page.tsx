@@ -20,14 +20,16 @@ interface AnimeDetail extends Anime {
   episodes: Episode[];
 }
 
+type WatchlistStatus = 'watching' | 'completed' | 'planned' | 'dropped' | null;
+
 export default function AnimeDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
   const [anime, setAnime] = useState<AnimeDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [isBookmarkLoading, setIsBookmarkLoading] = useState(true);
+  const [watchlistStatus, setWatchlistStatus] = useState<WatchlistStatus>(null);
+  const [isListLoading, setIsListLoading] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [averageUserScore, setAverageUserScore] = useState<number | null>(null);
   const [displayedRatingType, setDisplayedRatingType] = useState<'default' | 'user'>('default');
@@ -49,12 +51,12 @@ export default function AnimeDetailPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           setIsLoggedIn(true);
-          const bookmarkRes = await fetch(`/api/bookmarks?anime_id=${id}`, {
+          const listRes = await fetch(`/api/user-anime-list?anime_id=${id}`, {
             headers: { 'Authorization': `Bearer ${session.access_token}` },
           });
-          if (bookmarkRes.ok) {
-            const { isBookmarked } = await bookmarkRes.json();
-            setIsBookmarked(isBookmarked);
+          if (listRes.ok) {
+            const { status } = await listRes.json();
+            setWatchlistStatus(status);
           }
         } else {
           setIsLoggedIn(false);
@@ -64,7 +66,7 @@ export default function AnimeDetailPage() {
         console.error("Error fetching anime detail:", error);
       } finally {
         setLoading(false);
-        setIsBookmarkLoading(false);
+        setIsListLoading(false);
       }
     }
     
@@ -75,33 +77,55 @@ export default function AnimeDetailPage() {
     setAverageUserScore(score);
   }, []);
 
-  const handleToggleBookmark = async () => {
+  const handleStatusChange = async (newStatus: WatchlistStatus) => {
     if (!anime) return;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      alert('Anda harus login untuk menambahkan bookmark.');
+      alert('Anda harus login untuk mengelola daftar tontonan.');
       return;
     }
 
-    setIsBookmarkLoading(true);
-    const method = isBookmarked ? 'DELETE' : 'POST';
+    setIsListLoading(true);
+    
+    if (newStatus === null) {
+        try {
+            const res = await fetch('/api/user-anime-list', {
+              method: 'DELETE',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({ anime_id: anime.id }),
+            });
+      
+            if (res.ok) setWatchlistStatus(null);
+            else console.error("Gagal menghapus dari daftar");
+      
+          } catch (error) {
+            console.error("Failed to remove from list:", error);
+          } finally {
+            setIsListLoading(false);
+          }
+        return;
+    }
+
     try {
-      const res = await fetch('/api/bookmarks', {
-        method,
+      const res = await fetch('/api/user-anime-list', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ anime_id: anime.id }),
+        body: JSON.stringify({ anime_id: anime.id, status: newStatus }),
       });
 
-      if (res.ok) setIsBookmarked(!isBookmarked);
-      else console.error("Gagal mengubah status bookmark");
+      if (res.ok) setWatchlistStatus(newStatus);
+      else console.error("Gagal mengubah status daftar");
 
     } catch (error) {
-      console.error("Failed to toggle bookmark:", error);
+      console.error("Failed to update list status:", error);
     } finally {
-      setIsBookmarkLoading(false);
+      setIsListLoading(false);
     }
   };
 
@@ -119,6 +143,13 @@ export default function AnimeDetailPage() {
     ? averageUserScore.toFixed(1) 
     : anime.rating_score.toFixed(1);
   const ratingLabel = displayedRatingType === 'user' ? 'Rating Pengguna' : 'Rating Bawaan';
+
+  const statusLabels = {
+    watching: 'Sedang Ditonton',
+    completed: 'Selesai',
+    planned: 'Direncanakan',
+    dropped: 'Ditinggalkan',
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 text-white">
@@ -140,20 +171,22 @@ export default function AnimeDetailPage() {
           
           <div className="flex items-center gap-4 mb-4">
               {isLoggedIn && (
-                  <button
-                      onClick={handleToggleBookmark}
-                      disabled={isBookmarkLoading}
-                      className={`px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 flex items-center gap-2 ${
-                          isBookmarked
-                          ? 'bg-red-600 hover:bg-red-700 text-white'
-                          : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                      } disabled:bg-gray-500 disabled:cursor-not-allowed`}
-                  >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
-                          <path fillRule="evenodd" d="M6.32 2.577a49.255 49.255 0 0111.36 0c1.497.174 2.57 1.46 2.57 2.93V21a.75.75 0 01-1.085.67L12 18.089l-7.165 3.583A.75.75 0 013.75 21V5.507c0-1.47 1.073-2.756 2.57-2.93z" clipRule="evenodd" />
-                      </svg>
-                      {isBookmarkLoading ? 'Memuat...' : (isBookmarked ? 'Hapus Bookmark' : 'Tambah Bookmark')}
-                  </button>
+                <div className="relative inline-block text-left">
+                    <div>
+                        <select
+                            value={watchlistStatus || ''}
+                            onChange={(e) => handleStatusChange(e.target.value as WatchlistStatus)}
+                            disabled={isListLoading}
+                            className="px-4 py-2 text-sm font-semibold rounded-md transition-all duration-200 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white disabled:bg-gray-500 disabled:cursor-not-allowed"
+                        >
+                            <option value="">Tambah ke Daftar</option>
+                            <option value="watching">Sedang Ditonton</option>
+                            <option value="completed">Selesai</option>
+                            <option value="planned">Direncanakan</option>
+                            <option value="dropped">Ditinggalkan</option>
+                        </select>
+                    </div>
+                </div>
               )}
           </div>
 

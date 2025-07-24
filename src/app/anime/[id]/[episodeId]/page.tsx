@@ -11,7 +11,9 @@ import CommentSection from '@/components/CommentSection';
 interface Episode {
   id: number;
   episode_number: string;
-  gdrive_file_id_720p: string;
+  gdrive_file_id_480p: string | null;
+  gdrive_file_id_720p: string | null;
+  gdrive_file_id_1080p: string | null;
 }
 
 interface AnimeDetail extends Anime {
@@ -97,6 +99,12 @@ export default function WatchPage() {
     notFound();
   }
 
+  const resolutions = {
+    '480p': currentEpisode.gdrive_file_id_480p,
+    '720p': currentEpisode.gdrive_file_id_720p,
+    '1080p': currentEpisode.gdrive_file_id_1080p,
+  };
+
   return (
     <div className="bg-gray-900 text-white min-h-screen flex flex-col">
       <header className="p-4 bg-black flex justify-between items-center sticky top-0 z-10 border-b border-gray-700">
@@ -110,12 +118,12 @@ export default function WatchPage() {
       </header>
       
       <main className="flex-grow container mx-auto px-4 py-8 w-full">
-        <div className="w-full max-w-5xl mx-auto aspect-video mb-8 bg-black rounded-lg overflow-hidden">
-          <VideoPlayer gdriveFileId={currentEpisode.gdrive_file_id_720p} />
+        <div className="w-full max-w-5xl mx-auto mb-8">
+          <VideoPlayer resolutions={resolutions} />
         </div>
         
         <div className="w-full max-w-4xl mx-auto">
-          <CommentSection animeId={anime.id} />
+          <CommentSection animeId={parseInt(animeId, 10)} />
         </div>
       </main>
 

@@ -6,7 +6,7 @@ import { useParams, notFound, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import AnimeCard from '@/components/AnimeCard';
-import { Anime } from '@/types';
+import { Anime, UserAnimeListItem } from '@/types';
 
 // Tipe data untuk profil pengguna
 interface UserProfile {
@@ -28,12 +28,7 @@ interface WatchHistoryItem {
   }
 }
 
-// Tipe data untuk bookmark
-interface BookmarkItem {
-    id: number;
-    created_at: string;
-    anime: Anime;
-}
+type WatchlistStatus = 'watching' | 'completed' | 'planned' | 'dropped';
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -42,12 +37,14 @@ export default function UserProfilePage() {
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [history, setHistory] = useState<WatchHistoryItem[]>([]);
-  const [bookmarks, setBookmarks] = useState<BookmarkItem[]>([]);
+  const [watchlist, setWatchlist] = useState<UserAnimeListItem[]>([]);
   const [loading, setLoading] = useState(true);
   
   const [isOwnProfile, setIsOwnProfile] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  
+  const [activeTab, setActiveTab] = useState<WatchlistStatus | 'all'>('all');
 
   useEffect(() => {
     async function getPublicProfileData() {
@@ -77,7 +74,7 @@ export default function UserProfilePage() {
         }
         setProfile(profileData);
         
-        const [historyRes, bookmarkRes] = await Promise.all([
+        const [historyRes, watchlistRes] = await Promise.all([
             supabase
               .from('watch_history')
               .select('id, watched_at, episodes!inner(episode_number, anime!inner(id, title, thumbnail_gdrive_id))')
@@ -85,8 +82,8 @@ export default function UserProfilePage() {
               .order('watched_at', { ascending: false })
               .limit(10),
             supabase
-              .from('bookmarks')
-              .select('id, created_at, anime!inner(*)')
+              .from('user_anime_list')
+              .select('id, created_at, status, anime!inner(*)')
               .eq('user_id', userId)
               .order('created_at', { ascending: false })
         ]);
@@ -94,8 +91,8 @@ export default function UserProfilePage() {
         if (historyRes.error) console.error('Error mengambil riwayat:', historyRes.error.message);
         else setHistory(historyRes.data as unknown as WatchHistoryItem[]);
 
-        if (bookmarkRes.error) console.error('Error mengambil bookmarks:', bookmarkRes.error.message);
-        else setBookmarks(bookmarkRes.data as unknown as BookmarkItem[]);
+        if (watchlistRes.error) console.error('Error mengambil daftar tontonan:', watchlistRes.error.message);
+        else setWatchlist(watchlistRes.data as unknown as UserAnimeListItem[]);
 
       } catch (error) {
         console.error("Terjadi error tak terduga:", error);
@@ -139,6 +136,8 @@ export default function UserProfilePage() {
     await supabase.auth.signOut();
     router.push('/');
   };
+
+  const filteredWatchlist = watchlist.filter(item => activeTab === 'all' || item.status === activeTab);
 
   if (loading) {
     return <div className="text-center text-white py-20">Loading...</div>;
@@ -211,16 +210,23 @@ export default function UserProfilePage() {
           </div>
 
           <div className="mt-12">
-            <h2 className="text-3xl font-bold mb-6">Daftar Tontonan (Bookmark)</h2>
-            {bookmarks.length > 0 ? (
+            <h2 className="text-3xl font-bold mb-6">Daftar Tontonan</h2>
+            <div className="flex flex-wrap gap-2 mb-4">
+                <button onClick={() => setActiveTab('all')} className={`px-3 py-1 text-sm rounded-md ${activeTab === 'all' ? 'bg-indigo-600' : 'bg-gray-700'}`}>Semua</button>
+                <button onClick={() => setActiveTab('watching')} className={`px-3 py-1 text-sm rounded-md ${activeTab === 'watching' ? 'bg-indigo-600' : 'bg-gray-700'}`}>Menonton</button>
+                <button onClick={() => setActiveTab('completed')} className={`px-3 py-1 text-sm rounded-md ${activeTab === 'completed' ? 'bg-indigo-600' : 'bg-gray-700'}`}>Selesai</button>
+                <button onClick={() => setActiveTab('planned')} className={`px-3 py-1 text-sm rounded-md ${activeTab === 'planned' ? 'bg-indigo-600' : 'bg-gray-700'}`}>Direncanakan</button>
+                <button onClick={() => setActiveTab('dropped')} className={`px-3 py-1 text-sm rounded-md ${activeTab === 'dropped' ? 'bg-indigo-600' : 'bg-gray-700'}`}>Ditinggalkan</button>
+            </div>
+            {filteredWatchlist.length > 0 ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-8">
-                {bookmarks.map(item => (
-                  <AnimeCard key={`bookmark-${item.id}`} anime={item.anime} />
+                {filteredWatchlist.map(item => (
+                  <AnimeCard key={`watchlist-${item.id}`} anime={item.anime} />
                 ))}
               </div>
             ) : (
               <div className="p-8 bg-gray-800 rounded-lg">
-                <p className="text-gray-400 text-center">Pengguna ini belum memiliki bookmark.</p>
+                <p className="text-gray-400 text-center">Tidak ada anime dalam kategori ini.</p>
               </div>
             )}
           </div>

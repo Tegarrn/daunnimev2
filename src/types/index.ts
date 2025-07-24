@@ -30,3 +30,11 @@ export interface Rating {
     avatar_url: string | null;
   }
 }
+
+// Tipe baru untuk item dalam daftar tontonan pengguna
+export interface UserAnimeListItem {
+    id: number;
+    created_at: string;
+    anime: Anime;
+    status: 'watching' | 'completed' | 'planned' | 'dropped';
+}

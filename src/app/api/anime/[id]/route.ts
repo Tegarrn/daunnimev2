@@ -15,7 +15,9 @@ export async function GET(request: NextRequest) {
         episodes (
           id,
           episode_number,
-          gdrive_file_id_720p
+          gdrive_file_id_480p,
+          gdrive_file_id_720p,
+          gdrive_file_id_1080p
         )
       `
       )
