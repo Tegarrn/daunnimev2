@@ -1,5 +1,3 @@
-// src/components/Navbar.tsx
-
 'use client';
 
 import Link from 'next/link';
@@ -8,31 +6,48 @@ import { useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+interface Profile {
+  role?: string;
+}
+
 export default function Navbar() {
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // State untuk input pencarian
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    const fetchSessionAndProfile = async (currentSession: Session | null) => {
+      setSession(currentSession);
+      if (currentSession) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', currentSession.user.id)
+          .single();
+        setProfile(profileData);
+      } else {
+        setProfile(null);
+      }
       setLoading(false);
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      fetchSessionAndProfile(session);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setSession(session);
+        fetchSessionAndProfile(session);
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
   
-  // Update state jika query di URL berubah
   useEffect(() => {
     setSearchQuery(searchParams.get('q') || '');
   }, [searchParams]);
@@ -60,6 +75,9 @@ export default function Navbar() {
         <div className="flex items-center gap-6">
           <Link href="/" className="text-white text-xl font-bold">PustakaAnime</Link>
           <Link href="/anime" className="text-gray-300 hover:text-white text-sm">Daftar Anime</Link>
+          {session && profile?.role === 'admin' && (
+            <Link href="/admin" className="text-indigo-400 hover:text-indigo-300 text-sm font-semibold">Dasbor Admin</Link>
+          )}
         </div>
         
         <div className="flex items-center gap-4 flex-grow max-w-xs">
